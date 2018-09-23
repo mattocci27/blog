@@ -1,0 +1,220 @@
+---
+title: "Fitting a Poisson-lognormal distribution in Stan (rstan)"
+author: "Masatoshi Katabuchi"
+date: "September 2018"
+output:
+  #rmdformats::material
+  html_document:
+    fig_caption: yes
+    theme: spacelab #readable #sandstone #spacelab #flatly
+    highlight: pygments #tango #kate
+    toc: TRUE
+    toc_depth: 2
+    number_sections: TRUE
+    toc_float:
+      smooth_scroll: FALSE
+---
+
+```{r setup, include=FALSE}
+htmltools::tagList(rmarkdown::html_dependency_font_awesome())
+#library(rmdformats)
+```
+
+<a href="https://twitter.com/mattocci"><i class="fa fa-twitter fa-1x"></i> Twittter</a>
+<a href="https://github.com/mattocci27/"><i class="fa fa-github fa-1x"></i> Github</a>
+<a href="mailto:mattocci27@gmail.com"><i class="fa fa-envelope fa-1x"></i> Email</a>
+
+# Poisson-lognormal distribution
+
+A compound Poisson-lognormal distribution is a Poisson probability distribution where its parameter $\lambda$ is a random variable with lognormal distribution, that is to say log$\lambda$ are normally distributed with mean $\mu$ and variance $\sigma^2$ (Bulmer 1974). The density function is
+
+$$
+P(k) = \frac{1}{\sqrt{2\pi\sigma^2}k!}\int^\infty_0\lambda^{k-1}exp(-\lambda)exp(\frac{-(log\lambda-\mu)^2}{2\sigma^2})d\lambda, \; \text{where} \; k = 0, 1, 2, ... \;.
+$$
+
+The likelihood of the Poisson-lognormal distribution needs to be evaluated by numerical integration. Writing its log-likelihood function from scratch is pain. In Stan, we can define the likelihood of the Poisson-lognormal distribution using priors literally (i.e., log$\lambda$ are normally distributed with mean $\mu$ and variance $\sigma^2$) as follows;
+
+$$
+\sigma \sim \text{Half-}Cauchy(0, 5)
+$$
+$$
+\mu \sim N(0, 10)
+$$
+$$
+log\lambda_i \sim N(\mu, \sigma)
+$$
+$$
+y_i \sim Pois(\lambda_i) \; \text{or} \; y_i \sim PoisLog(log\lambda_i)
+$$
+
+where $y_i$ is given as data and $PoisLog$ is log parameterization of the Poisson (it's different from a compound Poisson-lognormal distribution) (Stan Version 2.17.0 Manual page 520).
+
+
+```{r}
+writeLines(readLines("poilog.stan"))
+```
+
+# Testing
+
+We generate dummy data, a sample of 100 random positive integers drawn from a Poisson distribution with mean of log$\lambda_i$ which are normally distributed with a mean of log(50) $\simeq$ 3.91 and a standard deviation of 1.0.
+
+```{r}
+set.seed(123)
+N <- 100
+mu <- log(50)
+sigma <- 1
+log_lambda <- rnorm(N, mu, sigma)
+Y <- rpois(N, exp(log_lambda))
+```
+
+```{r, cache=TRUE}
+library(ggthemes)
+theme_set(theme_solarized(light=FALSE))
+dat <- data_frame(Y)
+
+ggplot(dat, aes(Y)) +
+  geom_histogram(bins=30, fill = "#268bd2", col = "black")
+
+```
+
+We then use the Stan to fit the data.
+
+```{r, cache=TRUE, comment=NA}
+
+library(rstan)
+library(loo)
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
+list_dat <- list(N = N, y = Y)
+
+fit <- stan(file = "poilog.stan",
+          data = list_dat,
+          iter = 1000,
+          warmup = 500,
+          thin = 1,
+          chains =  4,
+          refresh = 500,
+          control = list(adapt_delta = 0.9, max_treedepth = 20))
+
+```
+
+```
+SAMPLING FOR MODEL 'poilog' NOW (CHAIN 1).
+
+Gradient evaluation took 6.4e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.64 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:   1 / 1000 [  0%]  (Warmup)
+Iteration: 500 / 1000 [ 50%]  (Warmup)
+Iteration: 501 / 1000 [ 50%]  (Sampling)
+Iteration: 1000 / 1000 [100%]  (Sampling)
+
+ Elapsed Time: 0.262078 seconds (Warm-up)
+               0.187632 seconds (Sampling)
+               0.44971 seconds (Total)
+
+
+SAMPLING FOR MODEL 'poilog' NOW (CHAIN 2).
+
+Gradient evaluation took 4.5e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.45 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:   1 / 1000 [  0%]  (Warmup)
+Iteration: 500 / 1000 [ 50%]  (Warmup)
+Iteration: 501 / 1000 [ 50%]  (Sampling)
+Iteration: 1000 / 1000 [100%]  (Sampling)
+
+ Elapsed Time: 0.254045 seconds (Warm-up)
+               0.1933 seconds (Sampling)
+               0.447345 seconds (Total)
+
+
+SAMPLING FOR MODEL 'poilog' NOW (CHAIN 3).
+
+Gradient evaluation took 3.5e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:   1 / 1000 [  0%]  (Warmup)
+Iteration: 500 / 1000 [ 50%]  (Warmup)
+Iteration: 501 / 1000 [ 50%]  (Sampling)
+Iteration: 1000 / 1000 [100%]  (Sampling)
+
+ Elapsed Time: 0.229415 seconds (Warm-up)
+               0.185794 seconds (Sampling)
+               0.415209 seconds (Total)
+
+
+SAMPLING FOR MODEL 'poilog' NOW (CHAIN 4).
+
+Gradient evaluation took 4.2e-05 seconds
+1000 transitions using 10 leapfrog steps per transition would take 0.42 seconds.
+Adjust your expectations accordingly!
+
+
+Iteration:   1 / 1000 [  0%]  (Warmup)
+Iteration: 500 / 1000 [ 50%]  (Warmup)
+Iteration: 501 / 1000 [ 50%]  (Sampling)
+Iteration: 1000 / 1000 [100%]  (Sampling)
+
+ Elapsed Time: 0.230132 seconds (Warm-up)
+               0.187833 seconds (Sampling)
+               0.417965 seconds (Total)
+```
+
+The resulting estimates well recovered the original values ($\mu$ and $\sigma$) `r emo::ji("beer")`
+
+
+```{r, eval = F, echo = F}
+fit
+```
+
+```
+
+print(fit)
+
+Inference for Stan model: poilog.
+4 chains, each with iter=1000; warmup=500; thin=1;
+post-warmup draws per chain=500, total post-warmup draws=2000.
+
+                   mean se_mean   sd    2.5%     25%     50%     75%   97.5% n_eff Rhat
+mu                 4.00    0.00 0.10    3.80    3.93    4.00    4.06    4.18  2000 1.00
+sigma              0.94    0.00 0.07    0.82    0.89    0.94    0.99    1.10  2000 1.00
+log_lambda[1]      3.20    0.00 0.20    2.79    3.06    3.20    3.33    3.56  2000 1.00
+log_lambda[2]      3.66    0.00 0.16    3.35    3.56    3.67    3.76    3.95  2000 1.00
+log_lambda[3]      5.53    0.00 0.06    5.41    5.49    5.53    5.58    5.65  2000 1.00
+.....
+
+log_lambda[97]     6.14    0.00 0.05    6.05    6.11    6.14    6.17    6.24  2000 1.00
+log_lambda[98]     5.48    0.00 0.07    5.35    5.43    5.48    5.52    5.61  2000 1.00
+log_lambda[99]     3.61    0.00 0.16    3.28    3.50    3.61    3.72    3.91  2000 1.00
+log_lambda[100]    2.83    0.01 0.23    2.36    2.67    2.84    3.00    3.25  2000 1.00
+lp__            -385.12    0.30 7.16 -400.14 -389.95 -384.88 -380.07 -372.43   580 1.01
+
+Samples were drawn using NUTS(diag_e) at Fri Sep 21 18:17:19 2018.
+For each parameter, n_eff is a crude measure of effective sample size,
+and Rhat is the potential scale reduction factor on split chains (at
+convergence, Rhat=1).
+
+```
+
+# Computing Environment
+
+```{r}
+writeLines(readLines(file.path(Sys.getenv("HOME"), ".R/Makevars")))
+devtools::session_info("rstan")
+```
+
+# Related
+
+- [Poisson lognormal R function](https://www.rdocumentation.org/packages/poilog/versions/0.4/topics/Poisson%20lognormal)
+
+- M. G. Bulmer. 1974. On Fitting the Poisson Lognormal Distribution to Species-Abundance Data. Biometrics 30: 101-110 [doi:10.2307/2529621](https://www.jstor.org/stable/2529621?origin=crossref&seq=1#metadata_info_tab_contents)
+
+- Engen, S., R. Lande, T. Walla & P. J. DeVries. 2002. Analyzing spatial structure of communities using the two-dimensional Poisson lognormal species abundance model. American Naturalist 160: 60-73. [doi:10.1086/340612](https://www.journals.uchicago.edu/doi/abs/10.1086/340612?journalCode=an)

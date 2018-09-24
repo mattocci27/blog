@@ -32,7 +32,7 @@ $$
 P(k) = \frac{1}{\sqrt{2\pi\sigma^2}k!}\int^\infty_0\lambda^{k-1}exp(-\lambda)exp(\frac{-(log\lambda-\mu)^2}{2\sigma^2})d\lambda, \; \text{where} \; k = 0, 1, 2, ... \;.
 $$
 
-The likelihood of the Poisson-lognormal distribution needs to be evaluated by numerical integration. Writing its log-likelihood function from scratch is pain. In Stan, we can define the likelihood of the Poisson-lognormal distribution using priors literally (i.e., log$\lambda$ are normally distributed with mean $\mu$ and variance $\sigma^2$) as follows;
+The likelihood of the Poisson-lognormal distribution needs to be evaluated by numerical integration. Writing its log-likelihood function from scratch is a pain. In Stan, we can define the likelihood of the Poisson-lognormal distribution using priors literally (i.e., log$\lambda$ are normally distributed with mean $\mu$ and variance $\sigma^2$) as follows;
 
 $$
 \sigma \sim \text{Half-}Cauchy(0, 5)

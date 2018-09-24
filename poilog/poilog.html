@@ -1849,7 +1849,7 @@ div.tocify {
 <p><span class="math display">\[
 P(k) = \frac{1}{\sqrt{2\pi\sigma^2}k!}\int^\infty_0\lambda^{k-1}exp(-\lambda)exp(\frac{-(log\lambda-\mu)^2}{2\sigma^2})d\lambda, \; \text{where} \; k = 0, 1, 2, ... \;.
 \]</span></p>
-<p>The likelihood of the Poisson-lognormal distribution needs to be evaluated by numerical integration. Writing its log-likelihood function from scratch is pain. In Stan, we can define the likelihood of the Poisson-lognormal distribution using priors literally (i.e., log<span class="math inline">\(\lambda\)</span> are normally distributed with mean <span class="math inline">\(\mu\)</span> and variance <span class="math inline">\(\sigma^2\)</span>) as follows;</p>
+<p>The likelihood of the Poisson-lognormal distribution needs to be evaluated by numerical integration. Writing its log-likelihood function from scratch is a pain. In Stan, we can define the likelihood of the Poisson-lognormal distribution using priors literally (i.e., log<span class="math inline">\(\lambda\)</span> are normally distributed with mean <span class="math inline">\(\mu\)</span> and variance <span class="math inline">\(\sigma^2\)</span>) as follows;</p>
 <p><span class="math display">\[
 \sigma \sim \text{Half-}Cauchy(0, 5)
 \]</span> <span class="math display">\[
@@ -2020,7 +2020,7 @@ convergence, Rhat=1).
 ##  ui       unknown                     
 ##  language (EN)                        
 ##  collate  en_US.UTF-8                 
-##  tz       America/Detroit             
+##  tz       America/Chicago             
 ##  date     2018-09-23</code></pre>
 <pre><code>## Packages -----------------------------------------------------------------</code></pre>
 <pre><code>##  package      * version   date       source                         
